@@ -3,7 +3,7 @@ use std::{
     ops::{BitAnd, BitOr, BitXor},
 };
 
-advent_of_code::solution!(2);
+advent_of_code::solution!(24);
 
 #[derive(Debug)]
 struct Gate<'a> {
@@ -91,6 +91,7 @@ pub fn part_one(input: &str) -> Option<u64> {
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
+    let _ = input;
     None
 }
 

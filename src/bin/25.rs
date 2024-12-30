@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-advent_of_code::solution!(1);
+advent_of_code::solution!(25);
 
 #[derive(Debug, PartialEq, Eq)]
 enum Schematic {
@@ -78,6 +78,7 @@ pub fn part_one(input: &str) -> Option<u64> {
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
+    let _ = input;
     None
 }
 
