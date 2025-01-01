@@ -35,48 +35,78 @@ fn diagonal_transpose<T: Clone>(grid: &[Vec<T>], direction: Direction) -> Vec<Ve
     result
 }
 
-type Grid = Vec<Vec<char>>;
+type Grid<T> = Vec<Vec<T>>;
 
-pub fn word_search(grid: &Grid) -> u64 {
-    swipe_twice(grid)
-        + swipe_twice(&transpose(grid))
-        + swipe_twice(&diagonal_transpose(grid, Direction::Regular))
-        + swipe_twice(&diagonal_transpose(grid, Direction::Reverse))
+pub fn word_search_xmas(grid: &Grid<char>) -> u64 {
+    swipe_twice_xmas(grid)
+        + swipe_twice_xmas(&transpose(grid))
+        + swipe_twice_xmas(&diagonal_transpose(grid, Direction::Regular))
+        + swipe_twice_xmas(&diagonal_transpose(grid, Direction::Reverse))
 }
 
-fn swipe_twice(grid: &Grid) -> u64 {
-    west_to_east(grid) + east_to_west(grid)
+fn swipe_twice_xmas(grid: &Grid<char>) -> u64 {
+    left_to_right(grid, &['X', 'M', 'A', 'S']) + right_to_left(grid, &['S', 'A', 'M', 'X'])
 }
 
-fn west_to_east(grid: &Grid) -> u64 {
+fn left_to_right<T: PartialEq, const N: usize>(grid: &Grid<T>, chars: &[T; N]) -> u64 {
     grid.iter()
-        .map(|row| {
-            row.windows(4)
-                .filter(|window| window == &['X', 'M', 'A', 'S'])
-                .count() as u64
-        })
+        .map(|row| row.windows(N).filter(|window| window == chars).count() as u64)
         .sum()
 }
 
-fn east_to_west(grid: &Grid) -> u64 {
+fn right_to_left<T: PartialEq, const N: usize>(grid: &Grid<T>, chars: &[T; N]) -> u64 {
     grid.iter()
         .map(|row| {
-            row.windows(4)
+            row.windows(N)
                 .rev()
-                .filter(|window| window == &['S', 'A', 'M', 'X'])
+                .filter(|window| window == chars)
                 .count() as u64
         })
         .sum()
+}
+
+fn find_crosses<const N: usize>(grid: &Grid<char>, chars: &[char; N]) -> u64 {
+    let len = grid.first().expect("is not empty").len() - 1;
+
+    let grid = diagonal_transpose(grid, Direction::Regular);
+
+    grid.iter()
+        .enumerate()
+        .map(|(i, row)| {
+            row.windows(N)
+                .enumerate()
+                .filter_map(|(j, window)| {
+                    if window != chars {
+                        return None;
+                    };
+
+                    let up_col = j + 2.min(0.max(i.saturating_sub(len)));
+                    let down_col = j + (0.max(2.min(len.saturating_sub(i))));
+
+                    let up = grid.get(i - 2).and_then(|r| r.get(up_col))?;
+                    let down = grid.get(i + 2).and_then(|r| r.get(down_col))?;
+
+                    ((up == &'M' && down == &'S') || (up == &'S' && down == &'M')).then_some(true)
+                })
+                .count() as u64
+        })
+        .sum()
+}
+
+fn word_search_cross_mas(grid: &Grid<char>) -> u64 {
+    find_crosses(grid, &['M', 'A', 'S']) + find_crosses(grid, &['S', 'A', 'M'])
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
     let grid = input.lines().map(|line| line.chars().collect()).collect();
 
-    Some(word_search(&grid))
+    Some(word_search_xmas(&grid))
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
-    None
+    let grid = input.lines().map(|line| line.chars().collect()).collect();
+
+    Some(word_search_cross_mas(&grid))
 }
 
 #[cfg(test)]
@@ -92,6 +122,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(9));
     }
 }
