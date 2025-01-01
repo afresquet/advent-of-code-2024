@@ -65,36 +65,37 @@ fn right_to_left<T: PartialEq, const N: usize>(grid: &Grid<T>, chars: &[T; N]) -
         .sum()
 }
 
-fn find_crosses<const N: usize>(grid: &Grid<char>, chars: &[char; N]) -> u64 {
-    let len = grid.first().expect("is not empty").len() - 1;
-
-    let grid = diagonal_transpose(grid, Direction::Regular);
+fn word_search_cross_mas(grid: &Grid<char>) -> u64 {
+    if grid.len() < 3 || grid.first().expect("is not empty").len() < 3 {
+        return 0;
+    }
 
     grid.iter()
         .enumerate()
+        .take(grid.len() - 2)
         .map(|(i, row)| {
-            row.windows(N)
+            row.iter()
                 .enumerate()
-                .filter_map(|(j, window)| {
-                    if window != chars {
-                        return None;
-                    };
-
-                    let up_col = j + 2.min(0.max(i.saturating_sub(len)));
-                    let down_col = j + (0.max(2.min(len.saturating_sub(i))));
-
-                    let up = grid.get(i - 2).and_then(|r| r.get(up_col))?;
-                    let down = grid.get(i + 2).and_then(|r| r.get(down_col))?;
-
-                    ((up == &'M' && down == &'S') || (up == &'S' && down == &'M')).then_some(true)
+                .take(row.len() - 2)
+                .filter(|(j, col)| {
+                    let top_left = col;
+                    let top_right = row.get(j + 2);
+                    let middle = grid.get(i + 1).and_then(|row| row.get(j + 1));
+                    let bottom_left = grid.get(i + 2).and_then(|row| row.get(*j));
+                    let bottom_right = grid.get(i + 2).and_then(|row| row.get(j + 2));
+                    match (top_left, middle, bottom_right) {
+                        ('M', Some('A'), Some('S')) | ('S', Some('A'), Some('M')) => {
+                            matches!(
+                                (top_right, bottom_left),
+                                (Some('M'), Some('S')) | (Some('S'), Some('M'))
+                            )
+                        }
+                        _ => false,
+                    }
                 })
                 .count() as u64
         })
         .sum()
-}
-
-fn word_search_cross_mas(grid: &Grid<char>) -> u64 {
-    find_crosses(grid, &['M', 'A', 'S']) + find_crosses(grid, &['S', 'A', 'M'])
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
