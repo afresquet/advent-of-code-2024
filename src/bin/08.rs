@@ -70,7 +70,56 @@ pub fn part_one(input: &str) -> Option<u64> {
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
-    None
+    let antennas = parse_antennas(input);
+
+    let height = input.lines().count();
+    let width = input.lines().next().expect("to have a row").len();
+
+    let antinodes = antennas
+        .values()
+        .flat_map(|nodes| {
+            nodes
+                .iter()
+                .flat_map(|node| {
+                    nodes
+                        .iter()
+                        .flat_map(|inner_node| {
+                            let direction_x = inner_node.0 - node.0;
+                            let direction_y = inner_node.1 - node.1;
+
+                            if direction_x == 0 && direction_y == 0 {
+                                return vec![*node];
+                            };
+
+                            let mut antinodes = Vec::new();
+
+                            let mut x = inner_node.0 + direction_x;
+                            let mut y = inner_node.1 + direction_y;
+
+                            loop {
+                                if x.is_negative()
+                                    || x >= width as isize
+                                    || y.is_negative()
+                                    || y >= height as isize
+                                {
+                                    break;
+                                }
+
+                                antinodes.push((x, y));
+
+                                x += direction_x;
+                                y += direction_y;
+                            }
+
+                            antinodes
+                        })
+                        .collect_vec()
+                })
+                .collect_vec()
+        })
+        .collect::<HashSet<_>>();
+
+    Some(antinodes.len() as u64)
 }
 
 #[cfg(test)]
@@ -86,6 +135,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(34));
     }
 }
