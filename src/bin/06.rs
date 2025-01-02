@@ -70,12 +70,12 @@ impl Position {
                 .get(self.y.checked_sub(1).unwrap_or(usize::MAX))
                 .and_then(|row| row.get(self.x))
             {
-                Some(&'#') => Self::step(&Self::right(self.x, self.y), map),
+                Some(&'#') => Ok(Self::right(self.x, self.y)),
                 Some(_) => Ok(Self::up(self.x, self.y - 1)),
                 None => Err(()),
             },
             Direction::Down => match map.get(self.y + 1).and_then(|row| row.get(self.x)) {
-                Some(&'#') => Self::step(&Self::left(self.x, self.y), map),
+                Some(&'#') => Ok(Self::left(self.x, self.y)),
                 Some(_) => Ok(Self::down(self.x, self.y + 1)),
                 None => Err(()),
             },
@@ -83,12 +83,12 @@ impl Position {
                 .get(self.y)
                 .and_then(|row| row.get(self.x.checked_sub(1).unwrap_or(usize::MAX)))
             {
-                Some(&'#') => Self::step(&Self::up(self.x, self.y), map),
+                Some(&'#') => Ok(Self::up(self.x, self.y)),
                 Some(_) => Ok(Self::left(self.x - 1, self.y)),
                 None => Err(()),
             },
             Direction::Right => match map.get(self.y).and_then(|row| row.get(self.x + 1)) {
-                Some(&'#') => Self::step(&Self::down(self.x, self.y), map),
+                Some(&'#') => Ok(Self::down(self.x, self.y)),
                 Some(_) => Ok(Self::right(self.x + 1, self.y)),
                 None => Err(()),
             },
@@ -117,7 +117,43 @@ pub fn part_one(input: &str) -> Option<u64> {
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
-    None
+    let map: Map = input.lines().map(|line| line.chars().collect()).collect();
+    let starting_position = Position::from_map(&map).expect("to have starting position");
+    let mut position = starting_position.clone();
+    let mut positions = HashSet::new();
+
+    loop {
+        positions.insert(position.to_coords());
+        match position.step(&map) {
+            Ok(pos) => position = pos,
+            Err(_) => break,
+        }
+    }
+
+    positions.remove(&starting_position.to_coords());
+
+    let loop_obstructions = positions
+        .iter()
+        .filter(|(x, y)| {
+            let mut map = map.clone();
+            map[*y][*x] = '#';
+
+            let mut position = starting_position.clone();
+
+            for _ in 0..1000000 {
+                match position.step(&map) {
+                    Ok(pos) if pos == starting_position => return true,
+                    Ok(pos) => position = pos,
+                    Err(_) => return false,
+                }
+            }
+
+            // assume infinite loop after 1000000 iterations
+            true
+        })
+        .count() as u64;
+
+    Some(loop_obstructions)
 }
 
 #[cfg(test)]
@@ -133,6 +169,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(6));
     }
 }
